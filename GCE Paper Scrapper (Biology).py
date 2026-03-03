@@ -5,9 +5,6 @@ from urllib.parse import urljoin, urlparse, parse_qs
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# ===================================
-# CONFIG
-# ===================================
 
 START_URL = "https://cameroongcerevision.com/a-level/june-biology-a-level/"
 SAVE_FOLDER = "GCE-BIOLOGY"
@@ -25,9 +22,6 @@ downloaded_files = set()
 session = requests.Session()
 session.headers.update(HEADERS)
 
-# ===================================
-# FILTERS
-# ===================================
 
 def is_valid_math_page(url):
     url = url.lower()
@@ -51,9 +45,6 @@ def fix_url(url):
     return url
 
 
-# ===================================
-# GOOGLE DRIVE FIX
-# ===================================
 
 def convert_google_drive(url):
     if "docs.google.com" in url and "/d/" in url:
@@ -65,18 +56,13 @@ def convert_google_drive(url):
     return url
 
 
-# ===================================
-# YEAR DETECTION
-# ===================================
 
 def extract_year(text):
     match = re.search(r"(20\d{2})", text)
     return match.group(1) if match else "Unknown_Year"
 
 
-# ===================================
-# DOWNLOAD PDF
-# ===================================
+
 
 def download_pdf(pdf_url, source_page):
 
@@ -98,7 +84,6 @@ def download_pdf(pdf_url, source_page):
         print("❌ Request failed:", e)
         return
 
-    # verify real PDF
     content_type = r.headers.get("Content-Type", "").lower()
 
     try:
@@ -135,10 +120,6 @@ def download_pdf(pdf_url, source_page):
                 f.write(chunk)
 
 
-# ===================================
-# EXTRACT PDFS FROM PAGE (FIXED)
-# ===================================
-
 def extract_pdfs(page_url):
 
     tasks = []
@@ -157,7 +138,6 @@ def extract_pdfs(page_url):
 
     soup = BeautifulSoup(r.text, "html.parser")
 
-    # --- Google viewer iframes ---
     for iframe in soup.find_all("iframe"):
 
         src = iframe.get("src", "")
@@ -175,7 +155,6 @@ def extract_pdfs(page_url):
             if pdf:
                 tasks.append((pdf, page_url))
 
-    # --- direct PDF links fallback ---
     for a in soup.find_all("a", href=True):
         link = a["href"]
         if ".pdf" in link.lower():
@@ -183,10 +162,6 @@ def extract_pdfs(page_url):
 
     return tasks
 
-
-# ===================================
-# MAIN SCRAPER (PARALLEL)
-# ===================================
 
 def scrape_subject():
 
@@ -206,7 +181,6 @@ def scrape_subject():
 
     all_download_tasks = []
 
-    # parallel scanning
     with ThreadPoolExecutor(MAX_WORKERS) as executor:
         futures = [executor.submit(extract_pdfs, page) for page in paper_pages]
 
@@ -215,7 +189,7 @@ def scrape_subject():
             if result:
                 all_download_tasks.extend(result)
 
-    # parallel downloading
+
     with ThreadPoolExecutor(MAX_WORKERS) as executor:
         futures = [
             executor.submit(download_pdf, url, page)
@@ -225,11 +199,6 @@ def scrape_subject():
         for _ in as_completed(futures):
             pass
 
-
-# ===================================
-# RUN
-# ===================================
-
 scrape_subject()
 
-print("\n✅ DONE — FAST DOWNLOAD COMPLETE")
+print("\nDONE — DOWNLOAD COMPLETE (Don't be stingy, share this repo with others.)")
